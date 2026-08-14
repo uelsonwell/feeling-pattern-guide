@@ -213,6 +213,20 @@ function Index() {
               </div>
             </div>
 
+            <h2 className="mt-12 font-heading text-2xl text-foreground">Sua emoção raiz</h2>
+            <p className="mt-2 leading-relaxed text-muted-foreground">
+              <strong className="text-foreground">{resultado.raizPrincipal.nome}</strong>{" "}
+              ({resultado.raizPrincipal.percentual}%) — {resultado.raizPrincipal.leitura}
+            </p>
+            <p className="mt-3 border-l-2 border-primary/40 pl-3 text-sm italic leading-relaxed text-foreground/80">
+              {resultado.raizPrincipal.caminho}
+            </p>
+            <div className="mt-5">
+              <RaizesResultado raizes={resultado.raizes} />
+            </div>
+
+
+
             <h2 className="mt-12 font-heading text-2xl text-foreground">Leitura por dimensão</h2>
             <div className="mt-4 space-y-4">
               {resultado.dimensoes.map((d) => (
