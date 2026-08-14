@@ -26,8 +26,8 @@ export type Resultado = {
   recurso: ResultadoDimensao;
 };
 
-const faixaPara = (faixas: Faixa[], valor: number) =>
-  faixas.find((f) => valor <= f.limite) ?? faixas[faixas.length - 1];
+const faixaPara = (faixas: Faixa[], valor: number): Faixa =>
+  (faixas.find((f) => valor <= f.limite) ?? faixas[faixas.length - 1]) as Faixa;
 
 export function calcularResultado(respostas: Respostas): Resultado {
   const dimensoes = DIMENSOES.map((dim) => {
