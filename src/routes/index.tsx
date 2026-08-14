@@ -227,7 +227,10 @@ function Index() {
 
 
 
-            <h2 className="mt-12 font-heading text-2xl text-foreground">Leitura por dimensão</h2>
+            <h2 className="mt-12 font-heading text-2xl text-foreground">
+              Leitura por emoção secundária
+            </h2>
+
             <div className="mt-4 space-y-4">
               {resultado.dimensoes.map((d) => (
                 <BarraDimensao key={d.id} dimensao={d} />
