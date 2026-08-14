@@ -1,23 +1,70 @@
 /**
  * MATRIZ DE COMPORTAMENTO E PADRÕES EMOCIONAIS
  * ---------------------------------------------------------------
- * Como editar:
- * 1. DIMENSOES: os eixos avaliados (aparecem no gráfico).
- * 2. PERGUNTAS: cada pergunta pertence a uma dimensão e tem opções.
- *    Cada opção tem um `peso` de 0 a 4 (0 = padrão saudável,
- *    4 = padrão emocional muito ativo).
- * 3. A pontuação de cada dimensão é normalizada em % (0 a 100).
- * 4. FAIXAS: textos de devolutiva por nível de cada dimensão.
+ * Estrutura:
+ * - EMOÇÕES RAIZ: Medo, Culpa/Vergonha e Raiva.
+ * - EMOÇÕES SECUNDÁRIAS (blocos/dimensões): Rejeição, Abandono,
+ *   Manipulação, Humilhação e Traição.
+ * - 20 perguntas (4 por bloco), cada uma com 4 alternativas.
+ * - Cada alternativa tem:
+ *     `raiz`  -> qual emoção raiz ela ativa ("medo" | "culpa" | "raiva")
+ *     `peso`  -> intensidade do padrão, de 0 (saudável) a 4 (muito ativo)
+ * - A intensidade de cada bloco é normalizada em % (0 a 100).
+ * - O perfil raiz mostra a distribuição percentual entre Medo,
+ *   Culpa/Vergonha e Raiva.
  */
 
 export const PESO_MAXIMO = 4;
 
-export type DimensaoId =
-  | "confianca"
-  | "autoprotecao"
-  | "vinculo"
-  | "regulacao"
-  | "autovalor";
+/* ------------------------------------------------------------------ */
+/* EMOÇÕES RAIZ                                                        */
+/* ------------------------------------------------------------------ */
+
+export type RaizId = "medo" | "culpa" | "raiva";
+
+export type Raiz = {
+  id: RaizId;
+  nome: string;
+  descricao: string;
+  leitura: string;
+  caminho: string;
+};
+
+export const RAIZES: Raiz[] = [
+  {
+    id: "medo",
+    nome: "Medo",
+    descricao: "Antecipação de perda, insegurança e necessidade de garantir o vínculo.",
+    leitura:
+      "Sua reação principal diante da dor é proteger o vínculo e evitar a perda. Você tende a ceder, monitorar e antecipar cenários para não ser pego(a) de surpresa.",
+    caminho:
+      "O trabalho começa pela regulação do corpo e por experiências pequenas de segurança: sustentar uma decisão sem buscar confirmação imediata.",
+  },
+  {
+    id: "culpa",
+    nome: "Culpa / Vergonha",
+    descricao: "Responsabilização de si, autocrítica e preocupação com a própria imagem.",
+    leitura:
+      "Diante do conflito, sua mente vira para dentro: você procura o que fez de errado e o que os outros passaram a pensar de você. O problema vira uma questão de valor pessoal.",
+    caminho:
+      "O foco é separar responsabilidade de identidade: o que é fato, o que é interpretação e o que simplesmente não é seu para carregar.",
+  },
+  {
+    id: "raiva",
+    nome: "Raiva",
+    descricao: "Defesa ativa, confronto e reação imediata para restabelecer limite.",
+    leitura:
+      "Sua energia de defesa é rápida e direta. A raiva protege a sua fronteira, mas costuma chegar antes da conversa e cobrar um preço nas relações.",
+    caminho:
+      "O caminho é usar a raiva como informação de limite: nomear o que foi violado antes de responder à altura.",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* EMOÇÕES SECUNDÁRIAS (BLOCOS)                                        */
+/* ------------------------------------------------------------------ */
+
+export type DimensaoId = "rejeicao" | "abandono" | "manipulacao" | "humilhacao" | "traicao";
 
 export type Dimensao = {
   id: DimensaoId;
@@ -27,213 +74,408 @@ export type Dimensao = {
 
 export const DIMENSOES: Dimensao[] = [
   {
-    id: "confianca",
-    nome: "Confiança",
+    id: "rejeicao",
+    nome: "Rejeição",
     descricao:
-      "O quanto você consegue se abrir e acreditar na intenção do outro depois das decepções vividas.",
+      "A dor de não ser aprovado(a), escolhido(a) ou considerado(a) suficiente pelo outro.",
   },
   {
-    id: "autoprotecao",
-    nome: "Autoproteção",
-    descricao:
-      "Mecanismos de defesa acionados para evitar novas dores: controle, distanciamento, antecipação de perdas.",
+    id: "abandono",
+    nome: "Abandono",
+    descricao: "A ameaça de perder o vínculo: distanciamento, silêncio e mudança de proximidade.",
   },
   {
-    id: "vinculo",
-    nome: "Vínculo",
+    id: "manipulacao",
+    nome: "Manipulação",
     descricao:
-      "A forma como você se aproxima, permanece e negocia intimidade em relações significativas.",
+      "Culpa usada como pressão, controle disfarçado de cuidado e inversão de responsabilidade.",
   },
   {
-    id: "regulacao",
-    nome: "Regulação emocional",
-    descricao:
-      "Como as emoções intensas surgem, quanto tempo permanecem e o que você faz com elas.",
+    id: "humilhacao",
+    nome: "Humilhação",
+    descricao: "Exposição, desvalorização pública e a sensação de ser diminuído(a) diante dos outros.",
   },
   {
-    id: "autovalor",
-    nome: "Autovalor",
-    descricao:
-      "A medida do seu merecimento interno: o que você acredita poder pedir, receber e ocupar.",
+    id: "traicao",
+    nome: "Traição",
+    descricao: "Quebra de confiança, mentira, segredo e deslealdade de quem estava próximo.",
   },
 ];
 
-export type Opcao = { texto: string; peso: number };
+/* ------------------------------------------------------------------ */
+/* PERGUNTAS                                                           */
+/* ------------------------------------------------------------------ */
+
+export type Opcao = { texto: string; raiz: RaizId; peso: number };
 
 export type Pergunta = {
   id: string;
+  codigo: string;
   dimensao: DimensaoId;
+  titulo: string;
   texto: string;
   opcoes: Opcao[];
 };
 
 export const PERGUNTAS: Pergunta[] = [
+  /* ---------------- BLOCO 1 — REJEIÇÃO ---------------- */
   {
-    id: "q1",
-    dimensao: "confianca",
-    texto: "Quando alguém demonstra interesse genuíno por você, sua primeira reação interna é:",
+    id: "R01",
+    codigo: "R01",
+    dimensao: "rejeicao",
+    titulo: "Desaprovação",
+    texto:
+      "Você toma uma decisão importante para sua vida e alguém cuja opinião é importante para você deixa claro que não concorda. O que tende a acontecer dentro de você?",
     opcoes: [
-      { texto: "Acolho e retribuo com naturalidade", peso: 0 },
-      { texto: "Gosto, mas fico observando por um tempo", peso: 2 },
-      { texto: "Desconfio e procuro o que há por trás", peso: 3 },
-      { texto: "Tenho certeza de que em algum momento vai decepcionar", peso: 4 },
+      {
+        texto: "Começo a questionar se minha decisão realmente foi boa e fico inseguro(a) sobre o que fazer.",
+        raiz: "medo",
+        peso: 3,
+      },
+      { texto: "Fico pensando no que essa pessoa passou a pensar de mim.", raiz: "culpa", peso: 3 },
+      { texto: "Sinto irritação e vontade de deixar claro que a decisão é minha.", raiz: "raiva", peso: 3 },
+      {
+        texto: "Tento explicar melhor minha escolha para que a pessoa compreenda e volte a me apoiar.",
+        raiz: "medo",
+        peso: 2,
+      },
     ],
   },
   {
-    id: "q2",
-    dimensao: "confianca",
-    texto: "Diante de uma promessa feita a você, o que costuma acontecer:",
+    id: "R02",
+    codigo: "R02",
+    dimensao: "rejeicao",
+    titulo: "Não ser escolhido",
+    texto:
+      "Você está em um grupo de pessoas e percebe que foi deixado de fora de uma escolha ou convite que considerava importante. O que mais provavelmente acontece com você?",
     opcoes: [
-      { texto: "Confio até que exista motivo real para duvidar", peso: 0 },
-      { texto: "Confio, mas já penso num plano alternativo", peso: 2 },
-      { texto: "Prefiro não criar expectativa nenhuma", peso: 3 },
-      { texto: "Já me preparo para o descumprimento", peso: 4 },
+      {
+        texto: "Sinto que talvez não seja tão importante para aquelas pessoas quanto imaginava.",
+        raiz: "medo",
+        peso: 3,
+      },
+      { texto: "Começo a pensar se fiz alguma coisa para provocar esse afastamento.", raiz: "culpa", peso: 3 },
+      {
+        texto: "Fico incomodado(a) e tenho vontade de mostrar que não preciso daquele grupo.",
+        raiz: "raiva",
+        peso: 4,
+      },
+      {
+        texto: "Tento descobrir o motivo e entender o que aconteceu antes de tirar conclusões.",
+        raiz: "medo",
+        peso: 1,
+      },
     ],
   },
   {
-    id: "q3",
-    dimensao: "confianca",
-    texto: "Ao lembrar de uma traição ou quebra de confiança do passado:",
+    id: "R03",
+    codigo: "R03",
+    dimensao: "rejeicao",
+    titulo: "Crítica pessoal",
+    texto:
+      "Alguém que você respeita faz uma crítica sobre uma característica sua, e não apenas sobre algo que você fez. Como você tende a reagir?",
     opcoes: [
-      { texto: "Consigo olhar com serenidade, virou aprendizado", peso: 0 },
-      { texto: "Ainda incomoda, mas não guia minhas escolhas", peso: 1 },
-      { texto: "Influencia como eu escolho as pessoas hoje", peso: 3 },
-      { texto: "Revivo a cena com a mesma intensidade de antes", peso: 4 },
+      {
+        texto: "Fico pensando bastante naquilo e começo a observar se realmente sou daquela maneira.",
+        raiz: "culpa",
+        peso: 2,
+      },
+      { texto: "Sinto-me diminuído(a), principalmente se outras pessoas estiverem presentes.", raiz: "culpa", peso: 4 },
+      {
+        texto: "Tenho vontade de responder imediatamente e mostrar que a pessoa também tem defeitos.",
+        raiz: "raiva",
+        peso: 4,
+      },
+      { texto: "Tento entender por que aquela pessoa me enxerga daquela maneira.", raiz: "medo", peso: 1 },
     ],
   },
   {
-    id: "q4",
-    dimensao: "autoprotecao",
-    texto: "Quando uma relação começa a ficar íntima demais, você:",
+    id: "R04",
+    codigo: "R04",
+    dimensao: "rejeicao",
+    titulo: "Não ser suficiente",
+    texto:
+      "Você se esforça muito para fazer algo importante e, mesmo assim, percebe que a outra pessoa esperava mais de você. Qual é sua reação mais espontânea?",
     opcoes: [
-      { texto: "Permaneço presente e converso sobre o que sinto", peso: 0 },
-      { texto: "Sigo, mas preservo uma parte só minha", peso: 1 },
-      { texto: "Crio distância sem explicar direito o motivo", peso: 3 },
-      { texto: "Encontro defeitos e me afasto antes de sofrer", peso: 4 },
+      { texto: "Sinto que talvez eu não tenha sido capaz o suficiente.", raiz: "culpa", peso: 4 },
+      { texto: "Fico preocupado(a) com a imagem que aquela pessoa passou a ter de mim.", raiz: "culpa", peso: 3 },
+      { texto: "Sinto raiva porque parece que meu esforço não foi reconhecido.", raiz: "raiva", peso: 3 },
+      { texto: "Tenho vontade de fazer ainda mais para provar que consigo.", raiz: "medo", peso: 3 },
+    ],
+  },
+
+  /* ---------------- BLOCO 2 — ABANDONO ---------------- */
+  {
+    id: "A01",
+    codigo: "A01",
+    dimensao: "abandono",
+    titulo: "Distanciamento",
+    texto:
+      "Uma pessoa muito importante para você começa a ficar mais distante, responde menos e demonstra menos interesse. O que tende a acontecer dentro de você?",
+    opcoes: [
+      { texto: "Fico preocupado(a) que esteja perdendo aquela pessoa.", raiz: "medo", peso: 4 },
+      { texto: "Começo a pensar se fiz alguma coisa que provocou essa mudança.", raiz: "culpa", peso: 3 },
+      { texto: "Fico irritado(a) e tenho vontade de cobrar uma explicação.", raiz: "raiva", peso: 3 },
+      { texto: "Também me afasto para não demonstrar que aquilo me afetou.", raiz: "medo", peso: 3 },
     ],
   },
   {
-    id: "q5",
-    dimensao: "autoprotecao",
-    texto: "Sobre pedir ajuda quando você está mal:",
+    id: "A02",
+    codigo: "A02",
+    dimensao: "abandono",
+    titulo: "Silêncio inesperado",
+    texto:
+      "Você manda uma mensagem para alguém importante e percebe que a pessoa visualizou, mas não respondeu durante muitas horas. Qual é sua reação mais espontânea?",
     opcoes: [
-      { texto: "Peço com tranquilidade a quem confio", peso: 0 },
-      { texto: "Peço, mas só depois de tentar resolver sozinho(a)", peso: 2 },
-      { texto: "Raramente peço, acho que incomoda", peso: 3 },
-      { texto: "Nunca peço, aprendi a contar só comigo", peso: 4 },
+      {
+        texto: "Começo a imaginar que alguma coisa aconteceu ou que essa pessoa está se afastando.",
+        raiz: "medo",
+        peso: 4,
+      },
+      { texto: "Penso se falei alguma coisa errada ou fiz algo que desagradou.", raiz: "culpa", peso: 3 },
+      {
+        texto: "Fico irritado(a) e penso que, se ela não quer responder, também não vou procurar.",
+        raiz: "raiva",
+        peso: 3,
+      },
+      { texto: "Tento ocupar minha cabeça com outras coisas, mas fico esperando a resposta.", raiz: "medo", peso: 2 },
     ],
   },
   {
-    id: "q6",
-    dimensao: "autoprotecao",
-    texto: "Diante de um conflito importante, sua tendência é:",
+    id: "A03",
+    codigo: "A03",
+    dimensao: "abandono",
+    titulo: "Mudança de vínculo",
+    texto:
+      "Uma pessoa com quem você tinha muita proximidade começa a fazer novos amigos e passa a dedicar menos tempo a você. Como você tende a se sentir e agir?",
     opcoes: [
-      { texto: "Enfrentar a conversa mesmo sendo desconfortável", peso: 0 },
-      { texto: "Esperar esfriar e depois falar", peso: 1 },
-      { texto: "Engolir para não gerar tensão", peso: 3 },
-      { texto: "Me calar e ir cortando o vínculo por dentro", peso: 4 },
+      { texto: "Sinto medo de perder o lugar que eu tinha na vida daquela pessoa.", raiz: "medo", peso: 4 },
+      { texto: "Começo a me perguntar o que há de errado comigo.", raiz: "culpa", peso: 4 },
+      {
+        texto: "Fico incomodado(a) e tenho vontade de demonstrar que não aceito ser deixado de lado.",
+        raiz: "raiva",
+        peso: 3,
+      },
+      { texto: "Tento me aproximar mais para recuperar a proximidade que existia antes.", raiz: "medo", peso: 2 },
     ],
   },
   {
-    id: "q7",
-    dimensao: "vinculo",
-    texto: "No relacionamento afetivo, o que mais aparece em você:",
+    id: "A04",
+    codigo: "A04",
+    dimensao: "abandono",
+    titulo: "Medo de perder",
+    texto:
+      "Quando percebe que uma relação importante está passando por uma fase difícil, qual é a sua tendência?",
     opcoes: [
-      { texto: "Presença tranquila, com espaço para os dois", peso: 0 },
-      { texto: "Preciso de sinais frequentes de que está tudo bem", peso: 2 },
-      { texto: "Oscilo entre querer muito perto e querer sumir", peso: 3 },
-      { texto: "Me anulo para manter a relação de pé", peso: 4 },
+      { texto: "Tento me aproximar e resolver rapidamente para não perder a relação.", raiz: "medo", peso: 3 },
+      { texto: "Fico pensando no que fiz de errado para a relação chegar naquele ponto.", raiz: "culpa", peso: 3 },
+      { texto: "Fico irritado(a) e começo a cobrar atitudes da outra pessoa.", raiz: "raiva", peso: 3 },
+      { texto: "Procuro me afastar emocionalmente para não sofrer caso a relação termine.", raiz: "medo", peso: 4 },
+    ],
+  },
+
+  /* ---------------- BLOCO 3 — MANIPULAÇÃO ---------------- */
+  {
+    id: "M01",
+    codigo: "M01",
+    dimensao: "manipulacao",
+    titulo: "Culpa como pressão",
+    texto:
+      "Você decide não fazer algo que uma pessoa próxima queria. Em vez de aceitar sua decisão, ela diz algo que faz você se sentir culpado por não ter feito o que ela queria. Como você tende a reagir?",
+    opcoes: [
+      { texto: "Acabo reconsiderando minha decisão para evitar que a pessoa fique magoada.", raiz: "medo", peso: 4 },
+      { texto: "Fico pensando se estou sendo egoísta ou injusto(a).", raiz: "culpa", peso: 4 },
+      {
+        texto: "Sinto raiva e tenho vontade de deixar claro que ninguém vai decidir por mim.",
+        raiz: "raiva",
+        peso: 3,
+      },
+      { texto: "Tento explicar minhas razões várias vezes até a pessoa aceitar minha decisão.", raiz: "culpa", peso: 2 },
     ],
   },
   {
-    id: "q8",
-    dimensao: "vinculo",
-    texto: "Quando o outro fica quieto ou distante por algumas horas:",
+    id: "M02",
+    codigo: "M02",
+    dimensao: "manipulacao",
+    titulo: "Controle disfarçado de cuidado",
+    texto:
+      "Uma pessoa próxima começa a questionar frequentemente suas escolhas, dizendo que faz isso porque quer proteger você e sabe o que é melhor para você. Como você tende a reagir?",
     opcoes: [
-      { texto: "Entendo que cada um tem seu tempo", peso: 0 },
-      { texto: "Fico atento(a), mas sigo minha rotina", peso: 1 },
-      { texto: "Começo a imaginar que fiz algo errado", peso: 3 },
-      { texto: "Entro em alerta e preciso resolver imediatamente", peso: 4 },
+      { texto: "Começo a duvidar das minhas próprias escolhas.", raiz: "medo", peso: 4 },
+      { texto: "Fico preocupado(a) em decepcionar essa pessoa.", raiz: "culpa", peso: 3 },
+      { texto: "Sinto irritação e vontade de cortar aquela interferência.", raiz: "raiva", peso: 3 },
+      { texto: "Passo a justificar minhas decisões para tentar fazer a pessoa entender.", raiz: "culpa", peso: 2 },
     ],
   },
   {
-    id: "q9",
-    dimensao: "vinculo",
-    texto: "Sobre dizer 'não' para quem você ama:",
+    id: "M03",
+    codigo: "M03",
+    dimensao: "manipulacao",
+    titulo: "Chantagem emocional",
+    texto:
+      "Alguém importante deixa claro que ficará magoado, se afastará ou mudará a relação caso você não faça aquilo que essa pessoa deseja. O que você tende a fazer?",
     opcoes: [
-      { texto: "Digo com clareza e sem culpa", peso: 0 },
-      { texto: "Digo, mas fico remoendo depois", peso: 2 },
-      { texto: "Custo muito e quase sempre cedo", peso: 3 },
-      { texto: "Não consigo, sinto que vou perder a pessoa", peso: 4 },
+      { texto: "Acabo cedendo para não correr o risco de perder a relação.", raiz: "medo", peso: 4 },
+      { texto: "Fico tomado(a) pela culpa e penso que deveria fazer aquilo pela pessoa.", raiz: "culpa", peso: 4 },
+      { texto: "Fico com raiva e sinto vontade de romper aquela pressão.", raiz: "raiva", peso: 3 },
+      {
+        texto: "Tento negociar até encontrar uma forma de fazer a pessoa desistir da ameaça.",
+        raiz: "medo",
+        peso: 2,
+      },
     ],
   },
   {
-    id: "q10",
-    dimensao: "regulacao",
-    texto: "Quando uma emoção forte aparece (raiva, medo, tristeza):",
+    id: "M04",
+    codigo: "M04",
+    dimensao: "manipulacao",
+    titulo: "Inversão de responsabilidade",
+    texto:
+      "Você tenta conversar com alguém sobre algo que fez você se sentir mal. Durante a conversa, a pessoa muda o foco e você termina se sentindo culpado por ter levantado o assunto. Como você tende a reagir?",
     opcoes: [
-      { texto: "Reconheço, sinto e ela passa em pouco tempo", peso: 0 },
-      { texto: "Demoro um pouco, mas consigo me organizar", peso: 1 },
-      { texto: "Ela toma conta do meu dia inteiro", peso: 3 },
-      { texto: "Perco o controle ou desligo completamente", peso: 4 },
+      { texto: "Começo a pensar que talvez eu realmente esteja exagerando.", raiz: "culpa", peso: 4 },
+      { texto: "Fico envergonhado(a) por ter criado aquela situação.", raiz: "culpa", peso: 4 },
+      {
+        texto: "Fico muito irritado(a) porque sinto que o problema foi colocado sobre mim.",
+        raiz: "raiva",
+        peso: 3,
+      },
+      { texto: "Tento voltar ao assunto original e explicar novamente o que aconteceu.", raiz: "medo", peso: 1 },
+    ],
+  },
+
+  /* ---------------- BLOCO 4 — HUMILHAÇÃO ---------------- */
+  {
+    id: "H01",
+    codigo: "H01",
+    dimensao: "humilhacao",
+    titulo: "Exposição",
+    texto:
+      "Alguém aponta um erro seu diante de outras pessoas, fazendo você se sentir exposto. Qual é sua reação mais espontânea?",
+    opcoes: [
+      { texto: "Quero sair daquela situação o mais rápido possível.", raiz: "medo", peso: 3 },
+      {
+        texto: "Fico pensando durante muito tempo sobre como aquelas pessoas passaram a me enxergar.",
+        raiz: "culpa",
+        peso: 4,
+      },
+      { texto: "Sinto vontade de responder na mesma intensidade.", raiz: "raiva", peso: 4 },
+      { texto: "Tento agir como se aquilo não tivesse importância.", raiz: "medo", peso: 2 },
     ],
   },
   {
-    id: "q11",
-    dimensao: "regulacao",
-    texto: "Seu corpo em situações de estresse emocional:",
+    id: "H02",
+    codigo: "H02",
+    dimensao: "humilhacao",
+    titulo: "Desvalorização",
+    texto:
+      "Você apresenta uma ideia na qual acredita e alguém a trata com ironia ou faz você parecer incapaz diante dos outros. Como você tende a reagir?",
     opcoes: [
-      { texto: "Reage e volta ao normal com facilidade", peso: 0 },
-      { texto: "Fica tenso, mas relaxa depois", peso: 1 },
-      { texto: "Insônia, aperto no peito ou dores frequentes", peso: 3 },
-      { texto: "Vive em estado de alerta quase o tempo todo", peso: 4 },
+      { texto: "Começo a questionar se minha ideia realmente era tão boa.", raiz: "culpa", peso: 3 },
+      { texto: "Sinto vergonha de ter falado e gostaria de não ter me exposto.", raiz: "culpa", peso: 4 },
+      { texto: "Fico com raiva e tenho vontade de colocar a pessoa no lugar dela.", raiz: "raiva", peso: 4 },
+      { texto: "Tento explicar minha ideia ainda melhor para mostrar que ela está errada.", raiz: "raiva", peso: 2 },
     ],
   },
   {
-    id: "q12",
-    dimensao: "regulacao",
-    texto: "Sobre remoer conversas e cenas na cabeça:",
+    id: "H03",
+    codigo: "H03",
+    dimensao: "humilhacao",
+    titulo: "Erro público",
+    texto:
+      "Você comete um erro diante de várias pessoas e percebe que algumas delas estão observando sua reação. O que acontece com você naquele momento?",
     opcoes: [
-      { texto: "Raramente acontece", peso: 0 },
-      { texto: "Acontece em situações realmente importantes", peso: 2 },
-      { texto: "Acontece toda semana", peso: 3 },
-      { texto: "É praticamente diário e me esgota", peso: 4 },
+      { texto: "Quero desaparecer daquela situação.", raiz: "medo", peso: 4 },
+      {
+        texto: "Sinto-me profundamente constrangido(a) e começo a pensar no que todos estão achando.",
+        raiz: "culpa",
+        peso: 4,
+      },
+      { texto: "Fico irritado(a), principalmente se alguém fizer algum comentário.", raiz: "raiva", peso: 3 },
+      { texto: "Tento rir da situação e agir como se não tivesse sido nada demais.", raiz: "medo", peso: 1 },
     ],
   },
   {
-    id: "q13",
-    dimensao: "autovalor",
-    texto: "Ao receber um elogio sincero:",
+    id: "H04",
+    codigo: "H04",
+    dimensao: "humilhacao",
+    titulo: "Ser diminuído",
+    texto:
+      "Durante uma discussão, alguém usa uma característica sua, uma dificuldade ou um erro do passado para diminuir você. O que tende a acontecer?",
     opcoes: [
-      { texto: "Recebo e agradeço", peso: 0 },
-      { texto: "Fico sem jeito, mas aceito", peso: 1 },
-      { texto: "Minimizo na hora", peso: 3 },
-      { texto: "Não acredito, acho que é gentileza", peso: 4 },
+      { texto: "Aquilo fica ecoando dentro de mim e começo a questionar meu próprio valor.", raiz: "culpa", peso: 4 },
+      { texto: "Sinto-me envergonhado(a) e gostaria de não ter aquela história exposta.", raiz: "culpa", peso: 3 },
+      { texto: "Sinto uma raiva muito forte e quero devolver a agressão.", raiz: "raiva", peso: 4 },
+      { texto: "Tento mostrar que aquilo não me atinge.", raiz: "medo", peso: 2 },
+    ],
+  },
+
+  /* ---------------- BLOCO 5 — TRAIÇÃO ---------------- */
+  {
+    id: "T01",
+    codigo: "T01",
+    dimensao: "traicao",
+    titulo: "Confiança quebrada",
+    texto:
+      "Você descobre que uma pessoa em quem confiava escondeu de você algo importante que poderia mudar sua percepção sobre a relação. Como tende a reagir?",
+    opcoes: [
+      { texto: "Fico inseguro(a) sobre o que mais pode estar sendo escondido.", raiz: "medo", peso: 3 },
+      {
+        texto: "Começo a me perguntar por que não percebi antes e se fiz alguma coisa para isso acontecer.",
+        raiz: "culpa",
+        peso: 3,
+      },
+      { texto: "Sinto raiva e quero confrontar a pessoa imediatamente.", raiz: "raiva", peso: 3 },
+      { texto: "Passo a desconfiar de tudo o que aquela pessoa me diz.", raiz: "medo", peso: 4 },
     ],
   },
   {
-    id: "q14",
-    dimensao: "autovalor",
-    texto: "Sobre o que você acredita merecer numa relação:",
+    id: "T02",
+    codigo: "T02",
+    dimensao: "traicao",
+    titulo: "Descobrir uma mentira",
+    texto:
+      "Você descobre que alguém próximo mentiu para você sobre algo importante. O que acontece primeiro dentro de você?",
     opcoes: [
-      { texto: "Reciprocidade, respeito e cuidado", peso: 0 },
-      { texto: "Mereço, mas nem sempre peço", peso: 2 },
-      { texto: "Aceito bem menos do que gostaria", peso: 3 },
-      { texto: "Sinto que preciso provar valor para ser amado(a)", peso: 4 },
+      { texto: "Começo a pensar que talvez não possa mais confiar naquela pessoa.", raiz: "medo", peso: 3 },
+      { texto: "Fico pensando se ignorei sinais que já estavam ali.", raiz: "culpa", peso: 3 },
+      { texto: "Sinto raiva e tenho vontade de exigir uma explicação.", raiz: "raiva", peso: 3 },
+      { texto: "Fico abalado(a) e começo a rever mentalmente tudo o que aconteceu.", raiz: "medo", peso: 4 },
     ],
   },
   {
-    id: "q15",
-    dimensao: "autovalor",
-    texto: "Quando algo dá errado em uma relação, sua leitura interna é:",
+    id: "T03",
+    codigo: "T03",
+    dimensao: "traicao",
+    titulo: "Segredo",
+    texto:
+      "Você descobre que pessoas próximas sabiam de algo importante que dizia respeito a você, mas escolheram não contar. Como tende a reagir?",
     opcoes: [
-      { texto: "Existem dois lados e responsabilidades divididas", peso: 0 },
-      { texto: "Analiso, mas puxo boa parte para mim", peso: 2 },
-      { texto: "A culpa costuma ser minha", peso: 3 },
-      { texto: "É sempre sobre eu não ser suficiente", peso: 4 },
+      { texto: "Fico pensando por que esconderam aquilo de mim.", raiz: "medo", peso: 2 },
+      { texto: "Sinto-me diminuído(a) por terem decidido que eu não deveria saber.", raiz: "culpa", peso: 4 },
+      { texto: "Fico muito irritado(a) e quero saber quem decidiu esconder aquilo.", raiz: "raiva", peso: 4 },
+      { texto: "Passo a desconfiar que outras coisas também podem estar sendo escondidas.", raiz: "medo", peso: 4 },
+    ],
+  },
+  {
+    id: "T04",
+    codigo: "T04",
+    dimensao: "traicao",
+    titulo: "Quebra de lealdade",
+    texto:
+      "Você descobre que alguém em quem confiava tomou uma atitude importante pelas suas costas. Qual é sua reação mais espontânea?",
+    opcoes: [
+      { texto: "Fico inseguro(a) e começo a questionar se realmente conhecia aquela pessoa.", raiz: "medo", peso: 3 },
+      { texto: "Penso no que fiz para que ela escolhesse agir dessa maneira comigo.", raiz: "culpa", peso: 4 },
+      { texto: "Sinto raiva e tenho vontade de confrontá-la.", raiz: "raiva", peso: 3 },
+      { texto: "Passo a me proteger e tenho dificuldade para confiar novamente.", raiz: "medo", peso: 4 },
     ],
   },
 ];
+
+/* ------------------------------------------------------------------ */
+/* FAIXAS DE DEVOLUTIVA                                                */
+/* ------------------------------------------------------------------ */
 
 export type Faixa = {
   limite: number; // percentual máximo desta faixa
@@ -243,118 +485,116 @@ export type Faixa = {
 };
 
 export const FAIXAS: Record<DimensaoId, Faixa[]> = {
-  confianca: [
+  rejeicao: [
+    {
+      limite: 33,
+      rotulo: "Rejeição pouco ativa",
+      leitura:
+        "A opinião do outro tem peso, mas não define quem você é. Você consegue divergir sem se sentir descartado(a).",
+      caminho: "Continue checando os fatos antes de interpretar um não como recusa a você.",
+    },
+    {
+      limite: 66,
+      rotulo: "Rejeição sensível",
+      leitura:
+        "Desaprovação e exclusão mexem bastante com você e ligam um esforço interno para reconquistar aprovação.",
+      caminho: "Antes de se explicar, pergunte-se: preciso ser compreendido(a) ou aprovado(a)?",
+    },
+    {
+      limite: 100,
+      rotulo: "Rejeição em ferida aberta",
+      leitura:
+        "Não ser escolhido(a) é vivido como prova de que você não é suficiente. A validação externa virou combustível.",
+      caminho:
+        "O trabalho é reconstruir critérios internos de valor que não dependam da resposta do outro.",
+    },
+  ],
+  abandono: [
+    {
+      limite: 33,
+      rotulo: "Abandono pouco ativo",
+      leitura: "Distâncias e silêncios não disparam alarme. Você suporta o intervalo sem se desorganizar.",
+      caminho: "Mantenha o hábito de falar sobre o que sente antes que vire interpretação.",
+    },
+    {
+      limite: 66,
+      rotulo: "Abandono em alerta",
+      leitura:
+        "Mudanças de ritmo do outro ligam seu radar. Você monitora sinais e antecipa afastamentos.",
+      caminho: "Nos primeiros 90 segundos da ativação, regule o corpo antes de agir ou cobrar.",
+    },
+    {
+      limite: 100,
+      rotulo: "Abandono dominante",
+      leitura:
+        "Perder o vínculo organiza suas escolhas: você cede, cobra ou se afasta primeiro para não sofrer a perda.",
+      caminho: "Comece nomeando o gatilho exato do pânico de perda e o que ele repete de uma história antiga.",
+    },
+  ],
+  manipulacao: [
+    {
+      limite: 33,
+      rotulo: "Limites preservados",
+      leitura: "Você identifica pressão e culpa induzida e mantém sua decisão sem precisar brigar.",
+      caminho: "Siga praticando o não curto, sem justificativas em excesso.",
+    },
+    {
+      limite: 66,
+      rotulo: "Permeável à pressão",
+      leitura:
+        "A culpa induzida funciona com você: mesmo percebendo, você negocia, se justifica e às vezes cede.",
+      caminho: "Treine frases de limite curtas e repetíveis, sem abrir o mérito da decisão de novo.",
+    },
+    {
+      limite: 100,
+      rotulo: "Limite capturado",
+      leitura:
+        "Sua decisão depende do humor do outro. Chantagem e inversão de responsabilidade te levam a duvidar da própria percepção.",
+      caminho: "Registre os fatos por escrito antes de conversar — isso protege sua leitura da realidade.",
+    },
+  ],
+  humilhacao: [
+    {
+      limite: 33,
+      rotulo: "Exposição tolerável",
+      leitura: "Errar diante dos outros incomoda, mas não abala seu senso de valor.",
+      caminho: "Continue tratando erro como evento, não como identidade.",
+    },
+    {
+      limite: 66,
+      rotulo: "Vergonha ativa",
+      leitura:
+        "A avaliação alheia pesa. Você revive cenas de exposição e evita se colocar para não correr o risco.",
+      caminho: "Exponha-se em doses pequenas e controladas para reduzir a carga da vergonha.",
+    },
+    {
+      limite: 100,
+      rotulo: "Humilhação em ferida aberta",
+      leitura:
+        "Ser diminuído(a) dispara uma reação intensa — sumir ou revidar. A cena fica ecoando por muito tempo.",
+      caminho: "A prioridade é regular o corpo na hora da exposição antes de qualquer resposta.",
+    },
+  ],
+  traicao: [
     {
       limite: 33,
       rotulo: "Confiança preservada",
-      leitura:
-        "As decepções vividas não fecharam sua porta. Você ainda consegue avaliar cada pessoa pelo que ela é.",
-      caminho: "Continue nomeando o que você observa em vez de generalizar experiências antigas.",
+      leitura: "Você avalia cada pessoa pelo que ela faz, sem generalizar decepções antigas.",
+      caminho: "Mantenha acordos claros e conversas diretas quando algo não bater.",
     },
     {
       limite: 66,
       rotulo: "Confiança em vigilância",
       leitura:
-        "Você se aproxima, mas mantém um radar ligado. A parte de você que confia divide espaço com a que fiscaliza.",
-      caminho:
-        "Experimente separar o que é leitura do presente do que é memória do passado antes de decidir.",
+        "Você se aproxima, mas mantém um radar ligado. Uma parte confia e outra fiscaliza o tempo todo.",
+      caminho: "Separe leitura do presente de memória do passado antes de decidir.",
     },
     {
       limite: 100,
       rotulo: "Confiança fraturada",
       leitura:
-        "A expectativa de decepção chegou antes da experiência. Você já entra nas relações preparado(a) para a perda.",
-      caminho:
-        "O trabalho aqui é reconstruir segurança em doses pequenas e verificáveis, não de uma vez.",
-    },
-  ],
-  autoprotecao: [
-    {
-      limite: 33,
-      rotulo: "Defesas flexíveis",
-      leitura: "Você se protege quando é necessário e baixa a guarda quando é seguro.",
-      caminho: "Mantenha o hábito de dizer o que sente antes que vire distância.",
-    },
-    {
-      limite: 66,
-      rotulo: "Armadura frequente",
-      leitura:
-        "Boa parte da sua energia vai para não ser pego(a) de surpresa. Autonomia virou também isolamento.",
-      caminho: "Escolha uma pessoa segura e pratique pedir algo pequeno esta semana.",
-    },
-    {
-      limite: 100,
-      rotulo: "Blindagem permanente",
-      leitura:
-        "A proteção passou a custar a intimidade. Você se afasta antes que a dor tenha chance de chegar.",
-      caminho: "Comece observando o momento exato em que a vontade de sumir aparece — e o que a dispara.",
-    },
-  ],
-  vinculo: [
-    {
-      limite: 33,
-      rotulo: "Vínculo seguro",
-      leitura: "Você consegue estar perto sem se perder e longe sem se desesperar.",
-      caminho: "Siga cultivando acordos claros e conversas diretas.",
-    },
-    {
-      limite: 66,
-      rotulo: "Vínculo ansioso",
-      leitura:
-        "A relação ocupa muito do seu termômetro interno. Silêncios viram interpretações e cobranças.",
-      caminho: "Antes de reagir, dê nome à emoção e espere o corpo baixar a intensidade.",
-    },
-    {
-      limite: 100,
-      rotulo: "Vínculo de sobrevivência",
-      leitura:
-        "Você se apaga para manter a relação viva. Permanecer virou mais importante do que estar bem.",
-      caminho: "Recupere um desejo próprio por semana e comunique-o, mesmo que gere desconforto.",
-    },
-  ],
-  regulacao: [
-    {
-      limite: 33,
-      rotulo: "Boa regulação",
-      leitura: "As emoções chegam, cumprem sua função e passam.",
-      caminho: "Mantenha suas rotinas de descarga: sono, corpo, conversa.",
-    },
-    {
-      limite: 66,
-      rotulo: "Regulação instável",
-      leitura:
-        "As emoções ficam mais tempo do que precisariam e sequestram seu dia com alguma frequência.",
-      caminho: "Trabalhe respiração e nomeação emocional nos primeiros 90 segundos da ativação.",
-    },
-    {
-      limite: 100,
-      rotulo: "Sistema em alerta",
-      leitura:
-        "Seu corpo vive em estado de defesa. O cansaço não é falta de força, é excesso de vigilância.",
-      caminho: "A prioridade é regular o corpo antes de tentar resolver a história.",
-    },
-  ],
-  autovalor: [
-    {
-      limite: 33,
-      rotulo: "Autovalor firme",
-      leitura: "Você sabe o que merece e sustenta isso sem precisar provar nada.",
-      caminho: "Continue escolhendo ambientes que confirmam esse valor.",
-    },
-    {
-      limite: 66,
-      rotulo: "Autovalor condicionado",
-      leitura:
-        "Seu valor sobe e desce conforme a resposta do outro. Você merece, mas nem sempre pede.",
-      caminho: "Pratique pedir algo legítimo sem justificar em excesso.",
-    },
-    {
-      limite: 100,
-      rotulo: "Autovalor comprometido",
-      leitura:
-        "A culpa virou lente padrão e o merecimento ficou condicionado ao esforço e à entrega ao outro.",
-      caminho:
-        "O ponto de partida é registrar diariamente uma evidência concreta de valor próprio.",
+        "A expectativa de ser enganado(a) chegou antes da experiência. Desconfiança virou postura padrão.",
+      caminho: "Reconstrua segurança em doses pequenas e verificáveis, não de uma vez.",
     },
   ],
 };
@@ -373,7 +613,7 @@ export const LEITURA_GERAL: Faixa[] = [
     leitura:
       "Há partes suas que funcionam bem e partes que ainda operam a partir da defesa. É o retrato clássico de quem já se decepcionou e seguiu adiante sem elaborar tudo.",
     caminho:
-      "Sua sessão pode priorizar as duas dimensões mais altas do gráfico — é ali que está a maior alavanca de mudança.",
+      "Sua sessão pode priorizar as duas emoções secundárias mais altas do gráfico — é ali que está a maior alavanca de mudança.",
   },
   {
     limite: 100,

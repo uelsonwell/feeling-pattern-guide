@@ -3,10 +3,12 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Leaf, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { DIMENSOES, PERGUNTAS } from "@/data/matriz";
+import { DIMENSOES, PERGUNTAS, RAIZES } from "@/data/matriz";
 import { calcularResultado, type Respostas } from "@/lib/matriz-score";
 import { RadarResultado } from "@/components/matriz/RadarResultado";
 import { BarraDimensao } from "@/components/matriz/BarraDimensao";
+import { RaizesResultado } from "@/components/matriz/RaizesResultado";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -88,13 +90,27 @@ function Index() {
               ))}
             </div>
 
+            <h2 className="mt-10 font-heading text-2xl text-foreground">Emoções raiz</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Cada resposta também revela qual emoção raiz comanda sua reação.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {RAIZES.map((r) => (
+                <div key={r.id} className="rounded-2xl border border-primary/30 bg-accent/40 p-5">
+                  <h3 className="font-heading text-lg text-accent-foreground">{r.nome}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-foreground/80">{r.descricao}</p>
+                </div>
+              ))}
+            </div>
+
+
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Button size="lg" className="rounded-full px-7" onClick={() => setEtapa("quiz")}>
                 Iniciar mapeamento
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
               <span className="text-sm text-muted-foreground">
-                {total} perguntas · cerca de 6 minutos · nada é armazenado
+                {total} perguntas · cerca de 8 minutos · nada é armazenado
               </span>
             </div>
           </section>
@@ -112,8 +128,10 @@ function Index() {
 
             <div className="mt-9 rounded-3xl border border-border bg-card p-6 shadow-[var(--shadow-soft)] sm:p-8">
               <p className="text-xs tracking-wide text-primary uppercase">
-                {DIMENSOES.find((d) => d.id === pergunta.dimensao)?.nome}
+                {pergunta.codigo} · {DIMENSOES.find((d) => d.id === pergunta.dimensao)?.nome} ·{" "}
+                {pergunta.titulo}
               </p>
+
               <h2 className="mt-3 font-heading text-2xl leading-snug text-card-foreground">
                 {pergunta.texto}
               </h2>
@@ -195,7 +213,24 @@ function Index() {
               </div>
             </div>
 
-            <h2 className="mt-12 font-heading text-2xl text-foreground">Leitura por dimensão</h2>
+            <h2 className="mt-12 font-heading text-2xl text-foreground">Sua emoção raiz</h2>
+            <p className="mt-2 leading-relaxed text-muted-foreground">
+              <strong className="text-foreground">{resultado.raizPrincipal.nome}</strong>{" "}
+              ({resultado.raizPrincipal.percentual}%) — {resultado.raizPrincipal.leitura}
+            </p>
+            <p className="mt-3 border-l-2 border-primary/40 pl-3 text-sm italic leading-relaxed text-foreground/80">
+              {resultado.raizPrincipal.caminho}
+            </p>
+            <div className="mt-5">
+              <RaizesResultado raizes={resultado.raizes} />
+            </div>
+
+
+
+            <h2 className="mt-12 font-heading text-2xl text-foreground">
+              Leitura por emoção secundária
+            </h2>
+
             <div className="mt-4 space-y-4">
               {resultado.dimensoes.map((d) => (
                 <BarraDimensao key={d.id} dimensao={d} />
