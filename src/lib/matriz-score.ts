@@ -58,6 +58,6 @@ export function calcularResultado(respostas: Respostas): Resultado {
     geral,
     leituraGeral: faixaPara(LEITURA_GERAL, geral),
     destaques: ordenadas.slice(0, 2),
-    recurso: ordenadas[ordenadas.length - 1],
+    recurso: ordenadas[ordenadas.length - 1] as ResultadoDimensao,
   };
 }
