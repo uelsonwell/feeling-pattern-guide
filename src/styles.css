@@ -19,7 +19,6 @@
  */
 
 @theme inline {
-  --shadow-soft: var(--shadow-soft);
   --font-heading: "Fraunces", Georgia, serif;
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
