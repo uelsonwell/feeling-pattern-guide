@@ -3,10 +3,12 @@ import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Leaf, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { DIMENSOES, PERGUNTAS } from "@/data/matriz";
+import { DIMENSOES, PERGUNTAS, RAIZES } from "@/data/matriz";
 import { calcularResultado, type Respostas } from "@/lib/matriz-score";
 import { RadarResultado } from "@/components/matriz/RadarResultado";
 import { BarraDimensao } from "@/components/matriz/BarraDimensao";
+import { RaizesResultado } from "@/components/matriz/RaizesResultado";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
