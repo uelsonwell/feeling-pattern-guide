@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Leaf, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Leaf, RotateCcw, SlidersHorizontal, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { DIMENSOES, PERGUNTAS, RAIZES } from "@/data/matriz";
@@ -8,6 +8,7 @@ import { calcularResultado, type Respostas } from "@/lib/matriz-score";
 import { RadarResultado } from "@/components/matriz/RadarResultado";
 import { BarraDimensao } from "@/components/matriz/BarraDimensao";
 import { RaizesResultado } from "@/components/matriz/RaizesResultado";
+import { useMatrizConfig } from "@/lib/matriz-config";
 
 
 export const Route = createFileRoute("/")({
@@ -38,11 +39,12 @@ function Index() {
   const [etapa, setEtapa] = useState<Etapa>("intro");
   const [atual, setAtual] = useState(0);
   const [respostas, setRespostas] = useState<Respostas>({});
+  const { config } = useMatrizConfig();
 
   const pergunta = PERGUNTAS[atual]!;
   const total = PERGUNTAS.length;
   const respondidas = Object.keys(respostas).length;
-  const resultado = useMemo(() => calcularResultado(respostas), [respostas]);
+  const resultado = useMemo(() => calcularResultado(respostas, config), [respostas, config]);
 
   const responder = (indice: number) => {
     setRespostas((r) => ({ ...r, [pergunta.id]: indice }));
@@ -64,6 +66,13 @@ function Index() {
         <header className="flex items-center gap-2 text-sm text-muted-foreground">
           <Leaf className="h-4 w-4 text-primary" />
           <span className="tracking-wide uppercase">Sessão de Mapeamento Emocional</span>
+          <Link
+            to="/calibrar"
+            className="ml-auto inline-flex items-center gap-1.5 hover:text-foreground"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Calibrar
+          </Link>
         </header>
 
         {etapa === "intro" && (
