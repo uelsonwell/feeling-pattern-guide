@@ -67,12 +67,16 @@ function Index() {
           <Leaf className="h-4 w-4 text-primary" />
           <span className="tracking-wide uppercase">Sessão de Mapeamento Emocional</span>
           <Link
-            to="/calibrar"
+            to="/mapa"
             className="ml-auto inline-flex items-center gap-1.5 hover:text-foreground"
           >
+            MAPA 3 Portas V4.1
+          </Link>
+          <Link to="/calibrar" className="inline-flex items-center gap-1.5 hover:text-foreground">
             <SlidersHorizontal className="h-4 w-4" />
             Calibrar
           </Link>
+
         </header>
 
         {etapa === "intro" && (
