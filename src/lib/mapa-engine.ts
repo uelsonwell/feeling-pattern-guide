@@ -134,7 +134,7 @@ const alternativaDe = (questionId: string, opcao: OpcaoLetra): Alternativa | und
   QUESTOES.find((q) => q.question_id === questionId)?.alternativas.find((a) => a.option === opcao);
 
 export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): MapaResultado {
-  const erros: string[] = [];
+  const erros: ErroMapa[] = [];
 
   // ── Estruturas zeradas
   const portasRaw: Record<PortaId, number> = { MED: 0, CV: 0, RAI: 0 };
@@ -147,30 +147,48 @@ export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): 
   const presencaContagem: Record<ExperienciaId, number> = { REJ: 0, ABA: 0, MAN: 0, HUM: 0, TRA: 0 };
 
   const responses: MapaResultado["responses"] = [];
+  const secondary_data: MapaResultado["secondary_data"] = [];
 
   QUESTOES.forEach((q) => {
     const escolhida = respostas[q.question_id];
     if (!escolhida) return;
     if (!["A", "B", "C", "D"].includes(escolhida)) {
-      erros.push(`Alternativa inválida em ${q.question_id}`);
+      erros.push({ code: "E002_INVALID_ALTERNATIVE", detail: `${q.question_id}-${escolhida}` });
       return;
     }
     const codigo = alternativaDe(q.question_id, escolhida);
     if (!codigo) {
-      erros.push(`Codificação ausente para ${q.question_id}-${escolhida}`);
+      erros.push({
+        code: "E006_MASTER_TABLE_MAPPING_NOT_FOUND",
+        detail: `${q.question_id}-${escolhida}`,
+      });
       return;
     }
     responses.push({ question_id: q.question_id, selected_option: escolhida });
 
+    // Dados secundários: preservados, nunca convertidos em pontuação
+    secondary_data.push({
+      question_id: q.question_id,
+      selected_option: escolhida,
+      secondary_experience: codigo.secondary_experience,
+      secondary_experience_weight: codigo.secondary_experience_weight,
+      secondary_gate: codigo.secondary_gate,
+      secondary_gate_weight: codigo.secondary_gate_weight,
+    });
+
+    const pesoPrincipal = codigo.primary_gate_weight ?? 0;
+
     // Portas (bruto)
-    portasRaw[codigo.primary_gate] += codigo.primary_gate_weight;
+    if (codigo.primary_gate) portasRaw[codigo.primary_gate] += pesoPrincipal;
     if (codigo.secondary_gate && codigo.secondary_gate_weight)
       portasRaw[codigo.secondary_gate] += codigo.secondary_gate_weight;
 
     // Matriz 5×3 — apenas experiência principal × porta principal
-    const cell = chaveCelula(codigo.primary_experience, codigo.primary_gate);
-    matrizRaw[cell] = (matrizRaw[cell] ?? 0) + codigo.primary_gate_weight;
-    if (codigo.primary_gate_weight > 0) presencaContagem[codigo.primary_experience] += 1;
+    if (codigo.primary_gate && pesoPrincipal > 0) {
+      const cell = chaveCelula(codigo.primary_experience, codigo.primary_gate);
+      matrizRaw[cell] = (matrizRaw[cell] ?? 0) + pesoPrincipal;
+      presencaContagem[codigo.primary_experience] += 1;
+    }
   });
 
   const answered = responses.length;
@@ -184,13 +202,13 @@ export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): 
     }),
   ) as Record<PortaId, ResultadoPorta>;
 
-  // ── Matriz normalizada (teto operacional de 8 pontos por célula)
+  // ── Matriz normalizada — MAX_REACHABLE = 8 por célula
   const matriz: Record<string, ResultadoCelula> = {};
   EXPERIENCIAS.forEach((e) =>
     PORTAS.forEach((p) => {
       const key = chaveCelula(e.id, p.id);
       const raw = Math.min(matrizRaw[key] ?? 0, MAX_CELULA);
-      if ((matrizRaw[key] ?? 0) > MAX_CELULA) erros.push(`Célula ${key} acima do máximo operacional`);
+
       matriz[key] = {
         experiencia: e.id,
         porta: p.id,
