@@ -34,7 +34,7 @@ export const Route = createFileRoute("/mapa")({
       {
         property: "og:description",
         content:
-          "Responda 20 situações e receba a leitura estrutural das portas Medo, Culpa/Vergonha e Raiva na matriz 5×3.",
+          "Responda 20 situações e receba a leitura estrutural das portas Medo, Controle/Vigilância e Raiva na matriz 5×3.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -103,7 +103,7 @@ function MapaPage() {
               <div className="rounded-2xl border border-border bg-card/70 p-5">
                 <h2 className="font-heading text-lg text-card-foreground">3 portas</h2>
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  Medo, Culpa/Vergonha e Raiva — como a resposta se organiza.
+                  Medo, Controle/Vigilância e Raiva — como a resposta se organiza.
                 </p>
               </div>
               <div className="rounded-2xl border border-border bg-card/70 p-5">
@@ -209,14 +209,70 @@ function MapaPage() {
               <PortasResultado resultado={resultado} />
             </div>
 
+            <h2 className="mt-12 font-heading text-2xl text-foreground">
+              Ranking das 15 células · TOP 1, TOP 2 e Δ
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Normalização R = (RAW ÷ 8) × 100. Empates são preservados: quando o Δ fica abaixo de{" "}
+              {resultado.classificacao.dominance_margin} p.p., a liderança não é forçada.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {[
+                { rotulo: "TOP 1", celula: resultado.top_1 },
+                { rotulo: "TOP 2", celula: resultado.top_2 },
+              ].map(({ rotulo, celula }) => (
+                <div key={rotulo} className="rounded-2xl border border-border bg-card p-5">
+                  <p className="text-xs tracking-wide text-primary uppercase">{rotulo}</p>
+                  <p className="mt-1 font-heading text-lg text-card-foreground">
+                    {celula
+                      ? `${NOME_EXPERIENCIA[celula.experiencia]} × ${NOME_PORTA[celula.porta]}`
+                      : "—"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {celula ? `${celula.percent}% · bruto ${celula.raw}` : "sem nível registrado"}
+                    {celula?.tie ? " · empate preservado" : ""}
+                  </p>
+                </div>
+              ))}
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <p className="text-xs tracking-wide text-primary uppercase">Δ (TOP 1 − TOP 2)</p>
+                <p className="mt-1 font-heading text-lg text-card-foreground">
+                  {resultado.delta} p.p.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {resultado.robustness.delta_sustains_top
+                    ? "diferença sustenta a leitura"
+                    : "diferença não sustenta liderança"}
+                </p>
+              </div>
+            </div>
+            <ol className="mt-4 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+              {resultado.ranking.map((c, i) => (
+                <li
+                  key={`${c.experiencia}_${c.porta}`}
+                  className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm"
+                >
+                  <span className="text-muted-foreground">
+                    {String(i + 1).padStart(2, "0")} · {NOME_EXPERIENCIA[c.experiencia]} ×{" "}
+                    {NOME_PORTA[c.porta]}
+                    {c.tie && <span className="ml-2 text-xs text-primary">empate</span>}
+                  </span>
+                  <span className="text-card-foreground">
+                    {c.percent}% · bruto {c.raw}
+                  </span>
+                </li>
+              ))}
+            </ol>
+
             <h2 className="mt-12 font-heading text-2xl text-foreground">Matriz 5 × 3</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Cada célula tem máximo operacional de 8 pontos. A associação entre experiência e porta
-              só é considerada quando a célula correspondente sustenta.
+              MAX_REACHABLE = 8 por célula. A associação entre experiência e porta só é considerada
+              quando a célula correspondente sustenta.
             </p>
             <div className="mt-4 rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-soft)] sm:p-6">
               <MatrizHeatmap resultado={resultado} />
             </div>
+
 
             <h2 className="mt-12 font-heading text-2xl text-foreground">
               IRE — presença e ressonância
