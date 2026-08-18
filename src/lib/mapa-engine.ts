@@ -49,6 +49,18 @@ export type ResultadoExperiencia = {
   level: Nivel;
 };
 
+export type CelulaRanking = ResultadoCelula & { rank: number; tie: boolean };
+
+export type CodigoErro =
+  | "E001_QUESTIONNAIRE_INCOMPLETE"
+  | "E002_INVALID_ALTERNATIVE"
+  | "E003_INVALID_QUESTION"
+  | "E004_VERSION_MISMATCH"
+  | "E005_DUPLICATE_RESPONSE"
+  | "E006_MASTER_TABLE_MAPPING_NOT_FOUND";
+
+export type ErroMapa = { code: CodigoErro; detail: string };
+
 export type MapaResultado = {
   metadata: {
     version: string;
@@ -57,10 +69,25 @@ export type MapaResultado = {
     total_questions: number;
     answered: number;
   };
+  status: "OK" | "ERROR";
   responses: { question_id: string; selected_option: OpcaoLetra }[];
+  /** Dados secundários preservados, sem virar pontuação adicional. */
+  secondary_data: {
+    question_id: string;
+    selected_option: OpcaoLetra;
+    secondary_experience: ExperienciaId | null;
+    secondary_experience_weight: number | null;
+    secondary_gate: PortaId | null;
+    secondary_gate_weight: number | null;
+  }[];
   portas: Record<PortaId, ResultadoPorta>;
   experiencias: Record<ExperienciaId, ResultadoExperiencia>;
   matriz: Record<string, ResultadoCelula>;
+  ranking: CelulaRanking[];
+  top_1: CelulaRanking | null;
+  top_2: CelulaRanking | null;
+  /** TOP 1 − TOP 2 em pontos percentuais. */
+  delta: number;
   ire: {
     dominant_experience: ExperienciaId | null;
     secondary_experience: ExperienciaId | null;
@@ -75,8 +102,15 @@ export type MapaResultado = {
     convergence_cell: ResultadoCelula | null;
     profile_type: "SINGLE" | "HYBRID" | "DISTRIBUTED";
   };
-  erros: string[];
+  robustness: {
+    /** Δ ≥ margem congelada → leitura sustentada. */
+    delta_sustains_top: boolean;
+    tied_top_cells: number;
+    answered_ratio: number;
+  };
+  erros: ErroMapa[];
 };
+
 
 export const nivelDe = (percent: number): Nivel =>
   percent >= 70 ? "HIGH" : percent >= 40 ? "MODERATE" : "LOW";
