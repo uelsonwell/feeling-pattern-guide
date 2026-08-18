@@ -49,6 +49,18 @@ export type ResultadoExperiencia = {
   level: Nivel;
 };
 
+export type CelulaRanking = ResultadoCelula & { rank: number; tie: boolean };
+
+export type CodigoErro =
+  | "E001_QUESTIONNAIRE_INCOMPLETE"
+  | "E002_INVALID_ALTERNATIVE"
+  | "E003_INVALID_QUESTION"
+  | "E004_VERSION_MISMATCH"
+  | "E005_DUPLICATE_RESPONSE"
+  | "E006_MASTER_TABLE_MAPPING_NOT_FOUND";
+
+export type ErroMapa = { code: CodigoErro; detail: string };
+
 export type MapaResultado = {
   metadata: {
     version: string;
@@ -57,10 +69,25 @@ export type MapaResultado = {
     total_questions: number;
     answered: number;
   };
+  status: "OK" | "ERROR";
   responses: { question_id: string; selected_option: OpcaoLetra }[];
+  /** Dados secundários preservados, sem virar pontuação adicional. */
+  secondary_data: {
+    question_id: string;
+    selected_option: OpcaoLetra;
+    secondary_experience: ExperienciaId | null;
+    secondary_experience_weight: number | null;
+    secondary_gate: PortaId | null;
+    secondary_gate_weight: number | null;
+  }[];
   portas: Record<PortaId, ResultadoPorta>;
   experiencias: Record<ExperienciaId, ResultadoExperiencia>;
   matriz: Record<string, ResultadoCelula>;
+  ranking: CelulaRanking[];
+  top_1: CelulaRanking | null;
+  top_2: CelulaRanking | null;
+  /** TOP 1 − TOP 2 em pontos percentuais. */
+  delta: number;
   ire: {
     dominant_experience: ExperienciaId | null;
     secondary_experience: ExperienciaId | null;
@@ -75,8 +102,15 @@ export type MapaResultado = {
     convergence_cell: ResultadoCelula | null;
     profile_type: "SINGLE" | "HYBRID" | "DISTRIBUTED";
   };
-  erros: string[];
+  robustness: {
+    /** Δ ≥ margem congelada → leitura sustentada. */
+    delta_sustains_top: boolean;
+    tied_top_cells: number;
+    answered_ratio: number;
+  };
+  erros: ErroMapa[];
 };
+
 
 export const nivelDe = (percent: number): Nivel =>
   percent >= 70 ? "HIGH" : percent >= 40 ? "MODERATE" : "LOW";
@@ -100,7 +134,7 @@ const alternativaDe = (questionId: string, opcao: OpcaoLetra): Alternativa | und
   QUESTOES.find((q) => q.question_id === questionId)?.alternativas.find((a) => a.option === opcao);
 
 export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): MapaResultado {
-  const erros: string[] = [];
+  const erros: ErroMapa[] = [];
 
   // ── Estruturas zeradas
   const portasRaw: Record<PortaId, number> = { MED: 0, CV: 0, RAI: 0 };
@@ -113,30 +147,48 @@ export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): 
   const presencaContagem: Record<ExperienciaId, number> = { REJ: 0, ABA: 0, MAN: 0, HUM: 0, TRA: 0 };
 
   const responses: MapaResultado["responses"] = [];
+  const secondary_data: MapaResultado["secondary_data"] = [];
 
   QUESTOES.forEach((q) => {
     const escolhida = respostas[q.question_id];
     if (!escolhida) return;
     if (!["A", "B", "C", "D"].includes(escolhida)) {
-      erros.push(`Alternativa inválida em ${q.question_id}`);
+      erros.push({ code: "E002_INVALID_ALTERNATIVE", detail: `${q.question_id}-${escolhida}` });
       return;
     }
     const codigo = alternativaDe(q.question_id, escolhida);
     if (!codigo) {
-      erros.push(`Codificação ausente para ${q.question_id}-${escolhida}`);
+      erros.push({
+        code: "E006_MASTER_TABLE_MAPPING_NOT_FOUND",
+        detail: `${q.question_id}-${escolhida}`,
+      });
       return;
     }
     responses.push({ question_id: q.question_id, selected_option: escolhida });
 
+    // Dados secundários: preservados, nunca convertidos em pontuação
+    secondary_data.push({
+      question_id: q.question_id,
+      selected_option: escolhida,
+      secondary_experience: codigo.secondary_experience,
+      secondary_experience_weight: codigo.secondary_experience_weight,
+      secondary_gate: codigo.secondary_gate,
+      secondary_gate_weight: codigo.secondary_gate_weight,
+    });
+
+    const pesoPrincipal = codigo.primary_gate_weight ?? 0;
+
     // Portas (bruto)
-    portasRaw[codigo.primary_gate] += codigo.primary_gate_weight;
+    if (codigo.primary_gate) portasRaw[codigo.primary_gate] += pesoPrincipal;
     if (codigo.secondary_gate && codigo.secondary_gate_weight)
       portasRaw[codigo.secondary_gate] += codigo.secondary_gate_weight;
 
     // Matriz 5×3 — apenas experiência principal × porta principal
-    const cell = chaveCelula(codigo.primary_experience, codigo.primary_gate);
-    matrizRaw[cell] = (matrizRaw[cell] ?? 0) + codigo.primary_gate_weight;
-    if (codigo.primary_gate_weight > 0) presencaContagem[codigo.primary_experience] += 1;
+    if (codigo.primary_gate && pesoPrincipal > 0) {
+      const cell = chaveCelula(codigo.primary_experience, codigo.primary_gate);
+      matrizRaw[cell] = (matrizRaw[cell] ?? 0) + pesoPrincipal;
+      presencaContagem[codigo.primary_experience] += 1;
+    }
   });
 
   const answered = responses.length;
@@ -150,13 +202,13 @@ export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): 
     }),
   ) as Record<PortaId, ResultadoPorta>;
 
-  // ── Matriz normalizada (teto operacional de 8 pontos por célula)
+  // ── Matriz normalizada — MAX_REACHABLE = 8 por célula
   const matriz: Record<string, ResultadoCelula> = {};
   EXPERIENCIAS.forEach((e) =>
     PORTAS.forEach((p) => {
       const key = chaveCelula(e.id, p.id);
       const raw = Math.min(matrizRaw[key] ?? 0, MAX_CELULA);
-      if ((matrizRaw[key] ?? 0) > MAX_CELULA) erros.push(`Célula ${key} acima do máximo operacional`);
+
       matriz[key] = {
         experiencia: e.id,
         porta: p.id,
@@ -215,7 +267,25 @@ export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): 
         ? "SINGLE"
         : "DISTRIBUTED";
 
-  if (answered < TOTAL_QUESTOES) erros.push("Questionário incompleto");
+  // ── Ranking das 15 células (empates preservados) + TOP 1, TOP 2 e Δ
+  const ordenadas = Object.values(matriz).sort(
+    (a, b) => b.percent - a.percent || a.experiencia.localeCompare(b.experiencia),
+  );
+  const ranking: CelulaRanking[] = ordenadas.map((c, i) => {
+    const rank = ordenadas.findIndex((o) => o.percent === c.percent) + 1;
+    const tie = ordenadas.filter((o) => o.percent === c.percent).length > 1;
+    return { ...c, rank: rank || i + 1, tie };
+  });
+  const top_1 = ranking[0] ?? null;
+  const nivel2 = ranking.find((c) => c.percent < (top_1?.percent ?? 0)) ?? null;
+  const top_2 = nivel2;
+  const delta = Math.round(((top_1?.percent ?? 0) - (top_2?.percent ?? 0)) * 10) / 10;
+
+  if (answered < TOTAL_QUESTOES)
+    erros.push({
+      code: "E001_QUESTIONNAIRE_INCOMPLETE",
+      detail: `${answered}/${TOTAL_QUESTOES} respostas`,
+    });
 
   return {
     metadata: {
@@ -225,10 +295,16 @@ export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): 
       total_questions: TOTAL_QUESTOES,
       answered,
     },
+    status: erros.length ? "ERROR" : "OK",
     responses,
+    secondary_data,
     portas,
     experiencias,
     matriz,
+    ranking,
+    top_1,
+    top_2,
+    delta,
     ire: {
       dominant_experience,
       secondary_experience: secondary_experience_ire,
@@ -243,6 +319,12 @@ export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): 
       convergence_cell,
       profile_type: profile_type as MapaResultado["classificacao"]["profile_type"],
     },
+    robustness: {
+      delta_sustains_top: delta >= DOMINANCE_MARGIN,
+      tied_top_cells: ranking.filter((c) => c.percent === (top_1?.percent ?? 0)).length,
+      answered_ratio: Math.round((answered / TOTAL_QUESTOES) * 1000) / 10,
+    },
     erros,
   };
 }
+
