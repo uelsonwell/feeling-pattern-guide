@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   NOME_EXPERIENCIA,
+  NOME_PORTA,
   QUESTOES,
   TOTAL_QUESTOES,
   VERSION,
