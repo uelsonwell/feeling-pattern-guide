@@ -267,7 +267,25 @@ export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): 
         ? "SINGLE"
         : "DISTRIBUTED";
 
-  if (answered < TOTAL_QUESTOES) erros.push("Questionário incompleto");
+  // ── Ranking das 15 células (empates preservados) + TOP 1, TOP 2 e Δ
+  const ordenadas = Object.values(matriz).sort(
+    (a, b) => b.percent - a.percent || a.experiencia.localeCompare(b.experiencia),
+  );
+  const ranking: CelulaRanking[] = ordenadas.map((c, i) => {
+    const rank = ordenadas.findIndex((o) => o.percent === c.percent) + 1;
+    const tie = ordenadas.filter((o) => o.percent === c.percent).length > 1;
+    return { ...c, rank: rank || i + 1, tie };
+  });
+  const top_1 = ranking[0] ?? null;
+  const nivel2 = ranking.find((c) => c.percent < (top_1?.percent ?? 0)) ?? null;
+  const top_2 = nivel2;
+  const delta = Math.round(((top_1?.percent ?? 0) - (top_2?.percent ?? 0)) * 10) / 10;
+
+  if (answered < TOTAL_QUESTOES)
+    erros.push({
+      code: "E001_QUESTIONNAIRE_INCOMPLETE",
+      detail: `${answered}/${TOTAL_QUESTOES} respostas`,
+    });
 
   return {
     metadata: {
@@ -277,10 +295,16 @@ export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): 
       total_questions: TOTAL_QUESTOES,
       answered,
     },
+    status: erros.length ? "ERROR" : "OK",
     responses,
+    secondary_data,
     portas,
     experiencias,
     matriz,
+    ranking,
+    top_1,
+    top_2,
+    delta,
     ire: {
       dominant_experience,
       secondary_experience: secondary_experience_ire,
@@ -295,6 +319,12 @@ export function calcularMapa(respostas: Respostas, assessmentId = "ASS-LOCAL"): 
       convergence_cell,
       profile_type: profile_type as MapaResultado["classificacao"]["profile_type"],
     },
+    robustness: {
+      delta_sustains_top: delta >= DOMINANCE_MARGIN,
+      tied_top_cells: ranking.filter((c) => c.percent === (top_1?.percent ?? 0)).length,
+      answered_ratio: Math.round((answered / TOTAL_QUESTOES) * 1000) / 10,
+    },
     erros,
   };
 }
+
