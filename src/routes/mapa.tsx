@@ -277,10 +277,22 @@ function MapaPage() {
 
 
             <h2 className="mt-12 font-heading text-2xl text-foreground">
+              Ressonância das 5 experiências
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Intensidade de ressonância por experiência (RAW ÷ 8 × 100). A presença permanece
+              disponível como métrica auxiliar na lista abaixo.
+            </p>
+            <div className="mt-4 rounded-3xl border border-border bg-card p-4 shadow-[var(--shadow-soft)] sm:p-6">
+              <ExperienciasResonancia resultado={resultado} />
+            </div>
+
+            <h2 className="mt-12 font-heading text-2xl text-foreground">
               IRE — presença e ressonância
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Presença e ressonância permanecem variáveis independentes.
+              Presença e ressonância são variáveis independentes. A largura das barras reflete a
+              ressonância; a presença aparece apenas como texto auxiliar.
             </p>
             <div className="mt-4">
               <IREResultado resultado={resultado} />
