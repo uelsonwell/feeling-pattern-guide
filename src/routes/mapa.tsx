@@ -21,6 +21,7 @@ import {
 import { PortasResultado } from "@/components/mapa/PortasResultado";
 import { MatrizHeatmap } from "@/components/mapa/MatrizHeatmap";
 import { IREResultado } from "@/components/mapa/IREResultado";
+import { ExperienciasResonancia } from "@/components/mapa/ExperienciasResonancia";
 
 export const Route = createFileRoute("/mapa")({
   head: () => ({
